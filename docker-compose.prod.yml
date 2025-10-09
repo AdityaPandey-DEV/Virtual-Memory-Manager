@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # AI Predictor Service
+  predictor:
+    build:
+      context: ./predictor
+      dockerfile: Dockerfile
+    ports:
+      - "${PREDICTOR_PORT:-5000}:5000"
+    environment:
+      - PREDICTOR_HOST=${PREDICTOR_HOST:-0.0.0.0}
+      - PREDICTOR_PORT=${PREDICTOR_PORT:-5000}
+      - AI_MODEL_TYPE=${AI_MODEL_TYPE:-xgboost}
+      - AI_PREDICTION_THRESHOLD=${AI_PREDICTION_THRESHOLD:-0.7}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - predictor_data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - vmm_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # C++ Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
+      - BACKEND_PORT=${BACKEND_PORT:-8080}
+      - PREDICTOR_URL=http://predictor:5000
+      - VMM_TOTAL_FRAMES=${VMM_TOTAL_FRAMES:-256}
+      - VMM_PAGE_SIZE=${VMM_PAGE_SIZE:-4096}
+      - VMM_TOTAL_PAGES=${VMM_TOTAL_PAGES:-1024}
+      - VMM_REPLACEMENT_POLICY=${VMM_REPLACEMENT_POLICY:-CLOCK}
+      - VMM_ENABLE_AI=${VMM_ENABLE_AI:-true}
+      - WORKLOAD_TYPE=${WORKLOAD_TYPE:-RANDOM}
+      - WORKLOAD_TOTAL_REQUESTS=${WORKLOAD_TOTAL_REQUESTS:-1000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - backend_data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - vmm_network
+    depends_on:
+      predictor:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:${BACKEND_PORT:-8080}
+      - REACT_APP_PREDICTOR_URL=http://localhost:${PREDICTOR_PORT:-5000}
+      - NODE_ENV=${NODE_ENV:-production}
+    networks:
+      - vmm_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vmm_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - vmm_network
+    depends_on:
+      - frontend
+      - backend
+      - predictor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  predictor_data:
+  backend_data:
+  redis_data:
+
+networks:
+  vmm_network:
+    driver: bridge

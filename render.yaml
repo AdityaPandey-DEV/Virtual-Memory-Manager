@@ -1,0 +1,66 @@
+services:
+  # Frontend Service
+  - type: web
+    name: vmm-frontend
+    env: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run preview -- --port $PORT --host 0.0.0.0
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_BACKEND_URL
+        fromService:
+          type: web
+          name: vmm-backend
+          property: host
+
+  # Backend API Service
+  - type: web
+    name: vmm-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: BACKEND_PORT
+        value: 8080
+      - key: BACKEND_HOST
+        value: 0.0.0.0
+      - key: PREDICTOR_URL
+        fromService:
+          type: web
+          name: vmm-predictor
+          property: host
+      - key: VMM_TOTAL_FRAMES
+        value: 256
+      - key: VMM_PAGE_SIZE
+        value: 4096
+      - key: VMM_TOTAL_PAGES
+        value: 1024
+      - key: VMM_REPLACEMENT_POLICY
+        value: CLOCK
+      - key: VMM_ENABLE_AI
+        value: true
+      - key: LOG_LEVEL
+        value: INFO
+
+  # AI Predictor Service
+  - type: web
+    name: vmm-predictor
+    env: python
+    plan: free
+    buildCommand: pip install -r predictor/requirements.txt
+    startCommand: cd predictor && python -m uvicorn predictor.service:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PREDICTOR_HOST
+        value: 0.0.0.0
+      - key: PREDICTOR_PORT
+        value: 5000
+      - key: LOG_LEVEL
+        value: INFO
+      - key: MODEL_PATH
+        value: model.pkl
+      - key: AI_MODEL_TYPE
+        value: xgboost
+      - key: AI_PREDICTION_THRESHOLD
+        value: 0.7

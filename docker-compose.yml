@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # AI Predictor Service (started first)
+  predictor:
+    build:
+      context: .
+      dockerfile: Dockerfile.predictor
+    ports:
+      - "5001:5001"
+    environment:
+      - PREDICTOR_MODEL_PATH=/app/models
+      - PREDICTOR_HOST=0.0.0.0
+      - PREDICTOR_PORT=5001
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./predictor:/app
+      - ./models:/app/models
+      - predictor_logs:/app/logs
+    networks:
+      - vmm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Backend C++ Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - VMM_LOG_LEVEL=INFO
+      - VMM_PREDICTOR_ENABLED=true
+      - VMM_PREDICTOR_URL=http://predictor:5001/predict
+      - VMM_PORT=8080
+    volumes:
+      - backend_logs:/app/logs
+    networks:
+      - vmm-network
+    depends_on:
+      predictor:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_PREDICTOR_URL=http://localhost:5000
+    networks:
+      - vmm-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vmm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - vmm-network
+    depends_on:
+      - frontend
+      - backend
+      - predictor
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  predictor_logs:
+  backend_logs:
+
+networks:
+  vmm-network:
+    driver: bridge

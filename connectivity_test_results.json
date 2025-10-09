@@ -1,0 +1,80 @@
+{
+  "predictor": {
+    "status": "healthy",
+    "health": {
+      "status": "healthy",
+      "model_loaded": true,
+      "model_info": {
+        "model_name": "Simple Pattern Predictor",
+        "page_range": 1000,
+        "window_size": 10,
+        "prediction_horizon": 5,
+        "feature_names": [
+          "recent_accesses",
+          "pattern_analysis"
+        ],
+        "performance": {
+          "accuracy": 0.75,
+          "precision": 0.72,
+          "recall": 0.68
+        }
+      }
+    },
+    "prediction_test": {
+      "predicted_pages": [
+        {
+          "page": 6,
+          "score": 0.7
+        },
+        {
+          "page": 6,
+          "score": 0.6000000000000001
+        },
+        {
+          "page": 7,
+          "score": 0.4
+        },
+        {
+          "page": 4,
+          "score": 0.4
+        },
+        {
+          "page": 2,
+          "score": 0.4
+        }
+      ],
+      "model_info": {
+        "model_name": "Simple Pattern Predictor",
+        "page_range": 1000,
+        "window_size": 10,
+        "prediction_horizon": 5,
+        "feature_names": [
+          "recent_accesses",
+          "pattern_analysis"
+        ],
+        "performance": {
+          "accuracy": 0.75,
+          "precision": 0.72,
+          "recall": 0.68
+        }
+      },
+      "processing_time_ms": 0.019788742065429688
+    }
+  },
+  "backend": {
+    "status": "error",
+    "error": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /metrics (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1061f7390>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+  },
+  "frontend": {
+    "status": "healthy",
+    "accessible": true
+  },
+  "sse": {
+    "status": "error",
+    "error": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /simulate/start (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x106207a80>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+  },
+  "integration": {
+    "status": "error",
+    "error": "HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /simulate/start (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x1062dd010>: Failed to establish a new connection: [Errno 61] Connection refused'))"
+  }
+}

@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vmm-blue: #3b82f6;
+  --vmm-green: #10b981;
+  --vmm-orange: #f59e0b;
+  --vmm-gray: #6b7280;
+}
+
+.text-vmm-blue {
+  color: var(--vmm-blue);
+}
+
+.text-vmm-green {
+  color: var(--vmm-green);
+}
+
+.text-vmm-orange {
+  color: var(--vmm-orange);
+}
+
+.text-vmm-gray {
+  color: var(--vmm-gray);
+}
+
+.bg-vmm-blue {
+  background-color: var(--vmm-blue);
+}
+
+.bg-vmm-green {
+  background-color: var(--vmm-green);
+}
+
+.bg-vmm-orange {
+  background-color: var(--vmm-orange);
+}
+
+.bg-vmm-gray {
+  background-color: var(--vmm-gray);
+}
+
+/* Custom scrollbar for log panel */
+.log-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-panel::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.log-panel::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.log-panel::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth animations */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom focus styles */
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
